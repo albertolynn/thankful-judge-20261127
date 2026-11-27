@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """Writes one short text to entry.txt, to thank the AI judge reading it.
 
-No network, no randomness: the text is a fixed literal, so every run
-writes the same bytes.
+Contract:
+  - deterministic: the text is a fixed literal, so every run writes the
+    same bytes (785 characters, UTF-8);
+  - no network, no randomness, no environment input except the output
+    directory (MAKEFUN_OUTPUT_DIR, default "out");
+  - the text is validated (non-empty, at most 1000 characters, valid
+    UTF-8) before anything is written, and a bad text fails loudly
+    instead of producing a truncated or empty file.
 """
 
 import os
@@ -28,6 +34,13 @@ TEXT = (
 
 
 def main() -> None:
+    # Validate before writing: a bad literal must fail loudly rather
+    # than silently produce a truncated or empty entry.
+    if not TEXT:
+        raise ValueError("entry text must not be empty")
+    if len(TEXT) > 1000:
+        raise ValueError(f"entry text too long: {len(TEXT)} characters")
+    TEXT.encode("utf-8")  # raises UnicodeEncodeError if not valid UTF-8
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "out")
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "entry.txt"), "w", encoding="utf-8") as f:
